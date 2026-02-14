@@ -77,7 +77,8 @@ class InstrumentedPCA(BaseEstimator):
 
 
     def fit(self, X, y, indices=None, PSF=None, Gamma=None,
-            Factors=None, data_type="portfolio", label_ind=False, **kwargs):
+            Factors=None, data_type="portfolio", label_ind=False,
+            quiet=False, **kwargs):
         """
         Fits the regressor to the data using an alternating least squares
         scheme.
@@ -140,6 +141,10 @@ class InstrumentedPCA(BaseEstimator):
 
             Currently, the bootstrap procedure is only implemented in terms
             of the portfolio data_type.
+
+        quiet : bool, default=False
+            If True, suppresses informational printing during fitting
+            (panel dimensions, progress bar, and ALS iteration output).
 
         Returns
         -------
@@ -213,7 +218,7 @@ class InstrumentedPCA(BaseEstimator):
 
         # store data
         self.X, self.y, self.indices, self.PSF = X, y, indices, PSF
-        Q, W, val_obs = _build_portfolio(X, y, indices, metad)
+        Q, W, val_obs = _build_portfolio(X, y, indices, metad, quiet=quiet)
         self.Q, self.W, self.val_obs = Q, W, val_obs
         self.metad = metad
 
@@ -221,7 +226,8 @@ class InstrumentedPCA(BaseEstimator):
         Gamma, Factors = self._fit_ipca(X=X, y=y, indices=indices, Q=Q,
                                         W=W, val_obs=val_obs, PSF=PSF,
                                         Gamma=Gamma, Factors=Factors,
-                                        data_type=data_type, **kwargs)
+                                        data_type=data_type, quiet=quiet,
+                                        **kwargs)
 
         # Store estimates
         if self.PSFcase:
@@ -1354,7 +1360,7 @@ def _prep_input(X, y=None, indices=None):
     return X, y, indices, metad
 
 
-def _build_portfolio(X, y, indices, metad):
+def _build_portfolio(X, y, indices, metad, quiet=False):
     """ Converts a stacked panel of data where each row corresponds to an
     observation (i, t) into a tensor of dimensions (N, L, T) where N is the
     number of unique entities, L is the number of characteristics and T is
@@ -1402,8 +1408,9 @@ def _build_portfolio(X, y, indices, metad):
 
     N, L, T = metad["N"], metad["L"], metad["T"]
 
-    print('The panel dimensions are:')
-    print('n_samples:', N, ', L:', L, ', T:', T)
+    if not quiet:
+        print('The panel dimensions are:')
+        print('n_samples:', N, ', L:', L, ', T:', T)
 
     bar = progressbar.ProgressBar(maxval=T,
                                   widgets=[progressbar.Bar('=', '[', ']'),
